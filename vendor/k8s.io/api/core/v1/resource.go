@@ -30,6 +30,14 @@ func (rl *ResourceList) Cpu() *resource.Quantity {
 	return rl.Name(ResourceCPU, resource.DecimalSI)
 }
 
+func (rl *ResourceList) GPUcore() *resource.Quantity {
+	return rl.Name(ResourceGPUcore, resource.DecimalSI)
+}
+
+func (rl *ResourceList) GPUmemo() *resource.Quantity {
+	return rl.Name(ResourceGPUmemo, resource.DecimalSI)
+}
+
 // Memory returns the Memory limit if specified.
 func (rl *ResourceList) Memory() *resource.Quantity {
 	return rl.Name(ResourceMemory, resource.BinarySI)

@@ -45,5 +45,36 @@ func makeResources(function *faasv1.Function) (*corev1.ResourceRequirements, err
 		resources.Requests[corev1.ResourceCPU] = qty
 	}
 
+	// Set GPU limits
+	if function.Spec.Limits != nil && len(function.Spec.Limits.GPUcore) > 0 {
+		qty, err := resource.ParseQuantity(function.Spec.Limits.GPUcore)
+		if err != nil {
+			return resources, err
+		}
+		resources.Limits[corev1.ResourceGPUcore] = qty
+	}
+	if function.Spec.Requests != nil && len(function.Spec.Requests.GPUcore) > 0 {
+		qty, err := resource.ParseQuantity(function.Spec.Requests.GPUcore)
+		if err != nil {
+			return resources, err
+		}
+		resources.Requests[corev1.ResourceGPUcore] = qty
+	}
+
+	if function.Spec.Limits != nil && len(function.Spec.Limits.GPUmemo) > 0 {
+		qty, err := resource.ParseQuantity(function.Spec.Limits.GPUmemo)
+		if err != nil {
+			return resources, err
+		}
+		resources.Limits[corev1.ResourceGPUmemo] = qty
+	}
+	if function.Spec.Requests != nil && len(function.Spec.Requests.GPUmemo) > 0 {
+		qty, err := resource.ParseQuantity(function.Spec.Requests.GPUmemo)
+		if err != nil {
+			return resources, err
+		}
+		resources.Requests[corev1.ResourceGPUmemo] = qty
+	}
+
 	return resources, nil
 }

@@ -375,7 +375,39 @@ func createResources(request types.FunctionDeployment) (*apiv1.ResourceRequireme
 		}
 		resources.Requests[apiv1.ResourceCPU] = qty
 	}
+        
+	// Set GPU limits
+	if request.Limits != nil && len(request.Limits.GPUcore) > 0 {
+		qty, err := resource.ParseQuantity(request.Limits.GPUcore)
+		if err != nil {
+			return resources, err
+		}
+		resources.Limits[apiv1.ResourceGPUcore] = qty
+	}
 
+	if request.Requests != nil && len(request.Requests.GPUcore) > 0 {
+		qty, err := resource.ParseQuantity(request.Requests.GPUcore)
+		if err != nil {
+			return resources, err
+		}
+		resources.Requests[apiv1.ResourceGPUcore] = qty
+	}
+        
+	if request.Limits != nil && len(request.Limits.GPUmemo) > 0 {
+		qty, err := resource.ParseQuantity(request.Limits.GPUmemo)
+		if err != nil {
+			return resources, err
+		}
+		resources.Limits[apiv1.ResourceGPUmemo] = qty
+	}
+
+	if request.Requests != nil && len(request.Requests.GPUmemo) > 0 {
+		qty, err := resource.ParseQuantity(request.Requests.GPUmemo)
+		if err != nil {
+			return resources, err
+		}
+		resources.Requests[apiv1.ResourceGPUmemo] = qty
+	}
 	return resources, nil
 }
 

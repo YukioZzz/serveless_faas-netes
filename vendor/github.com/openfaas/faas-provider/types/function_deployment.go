@@ -48,4 +48,6 @@ type FunctionDeployment struct {
 type FunctionResources struct {
 	Memory string `json:"memory,omitempty"`
 	CPU    string `json:"cpu,omitempty"`
+	GPUcore    string `json:"gpucore,omitempty"`
+	GPUmemo    string `json:"gpumemo,omitempty"`
 }

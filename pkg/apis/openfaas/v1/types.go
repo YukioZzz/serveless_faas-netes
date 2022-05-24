@@ -46,6 +46,8 @@ type FunctionSpec struct {
 type FunctionResources struct {
 	Memory string `json:"memory,omitempty"`
 	CPU    string `json:"cpu,omitempty"`
+	GPUcore    string `json:"gpucore,omitempty"`
+	GPUmemo string `json:"gpumemo,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
