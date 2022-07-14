@@ -4942,8 +4942,6 @@ type ResourceName string
 const (
 	// CPU, in cores. (500m = .5 cores)
 	ResourceCPU ResourceName = "cpu"
-	ResourceGPUcore ResourceName = "tencent.com/vcuda-core"
-	ResourceGPUmemo ResourceName = "tencent.com/vcuda-memory"
 	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
 	ResourceMemory ResourceName = "memory"
 	// Volume size, in bytes (e,g. 5Gi = 5GiB = 5 * 1024 * 1024 * 1024)
@@ -5650,8 +5648,6 @@ const (
 	ResourceServicesLoadBalancers ResourceName = "services.loadbalancers"
 	// CPU request, in cores. (500m = .5 cores)
 	ResourceRequestsCPU ResourceName = "requests.cpu"
-	ResourceRequestsGPUcore ResourceName = "requests.tencent.com/vcuda-core"
-	ResourceRequestsGPUmemo ResourceName = "requests.tencent.com/vcuda-memory"
 	// Memory request, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
 	ResourceRequestsMemory ResourceName = "requests.memory"
 	// Storage request, in bytes
@@ -5660,8 +5656,6 @@ const (
 	ResourceRequestsEphemeralStorage ResourceName = "requests.ephemeral-storage"
 	// CPU limit, in cores. (500m = .5 cores)
 	ResourceLimitsCPU ResourceName = "limits.cpu"
-	ResourceLimitsGPUcore ResourceName = "limits.tencent.com/vcuda-core"
-	ResourceLimitsGPUmemo ResourceName = "limits.tencent.com/vcuda-memory"
 	// Memory limit, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
 	ResourceLimitsMemory ResourceName = "limits.memory"
 	// Local ephemeral storage limit, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
