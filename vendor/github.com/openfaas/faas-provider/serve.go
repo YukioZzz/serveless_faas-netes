@@ -11,6 +11,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/openfaas/faas-provider/auth"
 	"github.com/openfaas/faas-provider/types"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // NameExpression for a function / service
@@ -41,51 +43,64 @@ func Serve(handlers *types.FaaSHandlers, config *types.FaaSConfig) {
 			log.Fatal(err)
 		}
 
-		handlers.FunctionReader = auth.DecorateWithBasicAuth(handlers.FunctionReader, credentials)
-		handlers.DeployHandler = auth.DecorateWithBasicAuth(handlers.DeployHandler, credentials)
-		handlers.DeleteHandler = auth.DecorateWithBasicAuth(handlers.DeleteHandler, credentials)
-		handlers.UpdateHandler = auth.DecorateWithBasicAuth(handlers.UpdateHandler, credentials)
-		handlers.ReplicaReader = auth.DecorateWithBasicAuth(handlers.ReplicaReader, credentials)
-		handlers.ReplicaUpdater = auth.DecorateWithBasicAuth(handlers.ReplicaUpdater, credentials)
-		handlers.InfoHandler = auth.DecorateWithBasicAuth(handlers.InfoHandler, credentials)
-		handlers.SecretHandler = auth.DecorateWithBasicAuth(handlers.SecretHandler, credentials)
-		handlers.LogHandler = auth.DecorateWithBasicAuth(handlers.LogHandler, credentials)
+		handlers.FunctionLister = auth.DecorateWithBasicAuth(handlers.FunctionLister, credentials)
+		handlers.DeployFunction = auth.DecorateWithBasicAuth(handlers.DeployFunction, credentials)
+		handlers.DeleteFunction = auth.DecorateWithBasicAuth(handlers.DeleteFunction, credentials)
+		handlers.UpdateFunction = auth.DecorateWithBasicAuth(handlers.UpdateFunction, credentials)
+		handlers.FunctionStatus = auth.DecorateWithBasicAuth(handlers.FunctionStatus, credentials)
+		handlers.ScaleFunction = auth.DecorateWithBasicAuth(handlers.ScaleFunction, credentials)
+		handlers.Info = auth.DecorateWithBasicAuth(handlers.Info, credentials)
+		handlers.Secrets = auth.DecorateWithBasicAuth(handlers.Secrets, credentials)
+		handlers.Logs = auth.DecorateWithBasicAuth(handlers.Logs, credentials)
 	}
+
+	hm := newHttpMetrics()
 
 	// System (auth) endpoints
-	r.HandleFunc("/system/functions", handlers.FunctionReader).Methods("GET")
-	r.HandleFunc("/system/functions", handlers.DeployHandler).Methods("POST")
-	r.HandleFunc("/system/functions", handlers.DeleteHandler).Methods("DELETE")
-	r.HandleFunc("/system/functions", handlers.UpdateHandler).Methods("PUT")
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.FunctionLister, "")).Methods(http.MethodGet)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeployFunction, "")).Methods(http.MethodPost)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeleteFunction, "")).Methods(http.MethodDelete)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.UpdateFunction, "")).Methods(http.MethodPut)
 
-	r.HandleFunc("/system/function/{name:["+NameExpression+"]+}", handlers.ReplicaReader).Methods("GET")
-	r.HandleFunc("/system/scale-function/{name:["+NameExpression+"]+}", handlers.ReplicaUpdater).Methods("POST")
-	r.HandleFunc("/system/info", handlers.InfoHandler).Methods("GET")
+	r.HandleFunc("/system/function/{name:["+NameExpression+"]+}",
+		hm.InstrumentHandler(handlers.FunctionStatus, "/system/function")).Methods(http.MethodGet)
+	r.HandleFunc("/system/scale-function/{name:["+NameExpression+"]+}",
+		hm.InstrumentHandler(handlers.ScaleFunction, "/system/scale-function")).Methods(http.MethodPost)
 
-	r.HandleFunc("/system/secrets", handlers.SecretHandler).Methods(http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete)
-	r.HandleFunc("/system/logs", handlers.LogHandler).Methods(http.MethodGet)
+	r.HandleFunc("/system/info",
+		hm.InstrumentHandler(handlers.Info, "")).Methods(http.MethodGet)
 
-	r.HandleFunc("/system/namespaces", handlers.ListNamespaceHandler).Methods("GET")
+	r.HandleFunc("/system/secrets",
+		hm.InstrumentHandler(handlers.Secrets, "")).Methods(http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete)
+
+	r.HandleFunc("/system/logs",
+		hm.InstrumentHandler(handlers.Logs, "")).Methods(http.MethodGet)
+
+	r.HandleFunc("/system/namespaces", hm.InstrumentHandler(handlers.ListNamespaces, "")).Methods(http.MethodGet)
+
+	proxyHandler := handlers.FunctionProxy
 
 	// Open endpoints
-	r.HandleFunc("/function/{name:["+NameExpression+"]+}", handlers.FunctionProxy)
-	r.HandleFunc("/function/{name:["+NameExpression+"]+}/", handlers.FunctionProxy)
-	r.HandleFunc("/function/{name:["+NameExpression+"]+}/{params:.*}", handlers.FunctionProxy)
+	r.HandleFunc("/function/{name:["+NameExpression+"]+}", proxyHandler)
+	r.HandleFunc("/function/{name:["+NameExpression+"]+}/", proxyHandler)
+	r.HandleFunc("/function/{name:["+NameExpression+"]+}/{params:.*}", proxyHandler)
 
-	if handlers.HealthHandler != nil {
-		r.HandleFunc("/healthz", handlers.HealthHandler).Methods("GET")
+	if handlers.Health != nil {
+		r.HandleFunc("/healthz", handlers.Health).Methods(http.MethodGet)
 	}
+
+	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
 
 	readTimeout := config.ReadTimeout
 	writeTimeout := config.WriteTimeout
 
-	tcpPort := 8080
+	port := 8080
 	if config.TCPPort != nil {
-		tcpPort = *config.TCPPort
+		port = *config.TCPPort
 	}
 
 	s := &http.Server{
-		Addr:           fmt.Sprintf(":%d", tcpPort),
+		Addr:           fmt.Sprintf(":%d", port),
 		ReadTimeout:    readTimeout,
 		WriteTimeout:   writeTimeout,
 		MaxHeaderBytes: http.DefaultMaxHeaderBytes, // 1MB - can be overridden by setting Server.MaxHeaderBytes.
